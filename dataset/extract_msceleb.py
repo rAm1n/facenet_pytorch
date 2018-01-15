@@ -33,19 +33,19 @@ parser.add_argument('--outputDir', type=str, default='/media/lior/LinuxHDD/datas
 args = parser.parse_args()
 
 with open(args.croppedTSV, 'r') as tsvF:
-    reader = csv.reader(tsvF, delimiter='\t')
-    i = 0
-    for row in reader:
-        MID, imgSearchRank, faceID, data = row[0], row[1], row[4], base64.b64decode(row[-1])
+	reader = csv.reader(tsvF, delimiter='\t')
+	i = 0
+	for row in reader:
+		MID, imgSearchRank, faceID, data = row[0], row[1], row[4], base64.b64decode(row[-1])
 
-        saveDir = os.path.join(args.outputDir, MID)
-        savePath = os.path.join(saveDir, "{}-{}.jpg".format(imgSearchRank, faceID))
+		saveDir = os.path.join(args.outputDir, MID)
+		savePath = os.path.join(saveDir, "{}-{}.jpg".format(imgSearchRank, faceID))
 
-        os.makedirs(saveDir, exist_ok=True)
-        with open(savePath, 'wb') as f:
-            f.write(data)
+		os.makedirs(saveDir, exist_ok=True)
+		with open(savePath, 'wb') as f:
+			f.write(data)
 
-        i += 1
+		i += 1
 
-        if i % 1000 == 0:
-            print("Extracted {} images.".format(i))
+		if i % 1000 == 0:
+			print("Extracted {} images.".format(i))

@@ -19,22 +19,27 @@ from LFWDataset import LFWDataset
 from PIL import Image
 from utils import PairwiseDistance,display_triplet_distance,display_triplet_distance_test
 import collections
+import time
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch Face Recognition')
 # Model options
-parser.add_argument('--dataroot', type=str, default='/media/lior/LinuxHDD/datasets/MSCeleb-cleaned',
+parser.add_argument('--dataroot', type=str, default='/media/ramin/monster/dataset/face/msceleb/aligned-clean/',
 					help='path to dataset')
-parser.add_argument('--lfw-dir', type=str, default='/media/lior/LinuxHDD/datasets/lfw-aligned-mtcnn',
+parser.add_argument('--lfw-dir', type=str, default='/media/ramin/monster/dataset/face/lfw/lfw_imgs/lfw_deepfunneled/lfw-deepfunneled/',
 					help='path to dataset')
-parser.add_argument('--lfw-pairs-path', type=str, default='lfw_pairs.txt',
+
+parser.add_argument('--list_of_imgs', type=str, default='/media/ramin/monster/dataset/face/msceleb/MS-Celeb-1M_clean_list.txt',
+					help='list of imgs to accelarte search in directory search')
+
+parser.add_argument('--lfw-pairs-path', type=str, default='/media/ramin/monster/dataset/face/lfw/pairs.txt',
 					help='path to pairs file')
 
-parser.add_argument('--log-dir', default='/media/lior/LinuxHDD/pytorch_face_logs',
+parser.add_argument('--log-dir', default='/media/ramin/data/face/',
 					help='folder to output model checkpoints')
 
 parser.add_argument('--resume',
-					default='/media/lior/LinuxHDD/pytorch_face_logs/run-optim_adagrad-n1000000-lr0.1-wd0.0-m0.5-embeddings256-msceleb-alpha10/checkpoint_1.pth',
+					default='/media/ramin/data/face/run-optim_adagrad-n1000000-lr0.1-wd0.0-m0.5-embeddings256-msceleb-alpha10/checkpoint_1.pth',
 					type=str, metavar='PATH',
 					help='path to latest checkpoint (default: none)')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
@@ -80,7 +85,6 @@ args = parser.parse_args()
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_id
 
 args.cuda = not args.no_cuda and torch.cuda.is_available()
-np.random.seed(args.seed)
 
 if not os.path.exists(args.log_dir):
 	os.makedirs(args.log_dir)
@@ -144,17 +148,20 @@ class Scale(object):
 			return img.resize(self.size, self.interpolation)
 
 
-kwargs = {'num_workers': 2, 'pin_memory': True} if args.cuda else {}
+kwargs = {'num_workers': 16, 'pin_memory': True} if args.cuda else {}
 l2_dist = PairwiseDistance(2)
 
 transform = transforms.Compose([
-						 Scale(96),
+						 #Scale(96),
+						 transforms.Scale((96,96)),
 						 transforms.ToTensor(),
 						 transforms.Normalize(mean = [ 0.5, 0.5, 0.5 ],
 											   std = [ 0.5, 0.5, 0.5 ])
 					 ])
 
-train_dir = TripletFaceDataset(dir=args.dataroot,n_triplets=args.n_triplets,transform=transform)
+
+train_dir = TripletFaceDataset(dir=args.dataroot,n_triplets=args.n_triplets,files=args.list_of_imgs, transform=transform)
+
 train_loader = torch.utils.data.DataLoader(train_dir,
 	batch_size=args.batch_size, shuffle=False, **kwargs)
 
@@ -162,7 +169,6 @@ test_loader = torch.utils.data.DataLoader(
 	LFWDataset(dir=args.lfw_dir,pairs_path=args.lfw_pairs_path,
 					 transform=transform),
 	batch_size=args.batch_size, shuffle=False, **kwargs)
-
 
 
 def main():
@@ -213,9 +219,9 @@ def train(train_loader, model, optimizer, epoch):
 	pbar = tqdm(enumerate(train_loader))
 	labels, distances = [], []
 
-
+	
 	for batch_idx, (data_a, data_p, data_n,label_p,label_n) in pbar:
-
+		
 		data_a, data_p, data_n = data_a.cuda(), data_p.cuda(), data_n.cuda()
 		data_a, data_p, data_n = Variable(data_a), Variable(data_p), \
 								 Variable(data_n)
@@ -267,10 +273,11 @@ def train(train_loader, model, optimizer, epoch):
 		logger.log_value('total_loss', loss.data[0]).step()
 		if batch_idx % args.log_interval == 0:
 			pbar.set_description(
-				'Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} \t # of Selected Triplets: {}'.format(
+				'Train Epoch: {} [{}/{} ({:.0f}%)] \t Loss: {:.6f}   \t  # of Selected Triplets: {}'.format(
 					epoch, batch_idx * len(data_a), len(train_loader.dataset),
 					100. * batch_idx / len(train_loader),
-					loss.data[0],len(hard_triplets[0])))
+					loss.data[0],len(hard_triplets[0])), 
+				refresh=True)
 
 
 		dists = l2_dist.forward(out_selected_a,out_selected_n) #torch.sqrt(torch.sum((out_a - out_n) ** 2, 1))  # euclidean distance
@@ -282,8 +289,10 @@ def train(train_loader, model, optimizer, epoch):
 		distances.append(dists.data.cpu().numpy())
 		labels.append(np.ones(dists.size(0)))
 
+		
+
 	labels = np.array([sublabel for label in labels for sublabel in label])
-	distances = np.array([subdist[0] for dist in distances for subdist in dist])
+	distances = np.array([subdist for dist in distances for subdist in dist])
 
 	tpr, fpr, accuracy, val, val_std, far = evaluate(distances,labels)
 	print('\33[91mTrain set: Accuracy: {:.8f}\n\33[0m'.format(np.mean(accuracy)))
@@ -321,7 +330,7 @@ def test(test_loader, model, epoch):
 				100. * batch_idx / len(test_loader)))
 
 	labels = np.array([sublabel for label in labels for sublabel in label])
-	distances = np.array([subdist[0] for dist in distances for subdist in dist])
+	distances = np.array([subdist for dist in distances for subdist in dist])
 
 	tpr, fpr, accuracy, val, val_std, far = evaluate(distances,labels)
 	print('\33[91mTest set: Accuracy: {:.8f}\n\33[0m'.format(np.mean(accuracy)))

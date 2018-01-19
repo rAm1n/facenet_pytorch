@@ -28,8 +28,8 @@ import os
 # import magic # Detect image type from buffer contents (disabled, all are jpg)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--croppedTSV', type=str,default='/media/lior/LinuxHDD/datasets/MsCelebV1-Faces-Aligned.part.04.tsv')
-parser.add_argument('--outputDir', type=str, default='/media/lior/LinuxHDD/datasets/MsCeleb')
+parser.add_argument('--croppedTSV', type=str,default='/media/ramin/monster/dataset/face/msceleb/MsCelebV1-Faces-Aligned.tsv')
+parser.add_argument('--outputDir', type=str, default='/media/ramin/monster/dataset/face/msceleb/aligned/')
 args = parser.parse_args()
 
 with open(args.croppedTSV, 'r') as tsvF:

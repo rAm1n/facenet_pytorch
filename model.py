@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torchvision.models import resnet18
+from torchvision.models import resnet18, resnet101
 import math
 import torch.nn.functional as F
 from torch.autograd import Variable
@@ -125,11 +125,9 @@ class FaceModelCenter(nn.Module):
 
 		diff_cpu = diff.cpu().data / appear_times_expand.add(1e-6)
 
-		#∆c_j =(sum_i=1^m δ(yi = j)(c_j − x_i)) / (1 + sum_i=1^m δ(yi = j))
 		diff_cpu = alpha * diff_cpu
 
 		for i in range(batch_size):
-			#Update the parameters c_j for each j by c^(t+1)_j = c^t_j − α · ∆c^t_j
 			self.centers[target.data[i]] -= diff_cpu[i].type(self.centers.type())
 
 		return center_loss, self.centers

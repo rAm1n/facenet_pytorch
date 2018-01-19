@@ -1,10 +1,10 @@
 import numpy as np
 import shutil
 import os
-reps_path = '/media/lior/LinuxHDD/datasets/msceleb_rep.txt'
+reps_path = '/media/ramin/monster/dataset/face/msceleb/aligned/list.txt'
 
-from_path = '/media/lior/LinuxHDD/datasets/MsCeleb-aligned'
-to_path = '/media/lior/LinuxHDD/datasets/MSCeleb-cleaned'
+from_path = '/media/ramin/monster/dataset/face/msceleb/aligned/'
+to_path = '/media/ramin/monster/dataset/face/msceleb/aligned-clean/'
 
 reps = {}
 with open(reps_path) as f:

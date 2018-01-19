@@ -4,11 +4,31 @@ import torchvision.datasets as datasets
 import os
 import numpy as np
 from tqdm import tqdm
+from utils import default_loader
 
 class TripletFaceDataset(datasets.ImageFolder):
 
-	def __init__(self, dir, n_triplets, transform=None, *arg, **kw):
-		super(TripletFaceDataset, self).__init__(dir,transform)
+	def __init__(self, dir, n_triplets, files=None,  transform=None, *arg, **kw):
+		if files:
+			f = open(files, 'r')
+			self.classes = list()
+			self.class_to_idx = dict()
+			self.imgs = list()
+			self.transform = transform
+			self.loader = default_loader
+
+			for line in f:
+				line = line.strip().split(' ')
+				img_path = os.path.join(dir, line[0])
+				self.imgs.append((img_path , int(line[1])))
+				if line[1] not in self.class_to_idx:
+					self.classes.append(line[1])
+					self.class_to_idx[line[1]] = int(line[1])
+					
+			self.classes.sort()
+
+		else:
+			super(TripletFaceDataset, self).__init__(dir,transform) 
 
 		self.n_triplets = n_triplets
 
@@ -79,3 +99,6 @@ class TripletFaceDataset(datasets.ImageFolder):
 
 	def __len__(self):
 		return len(self.training_triplets)
+
+
+

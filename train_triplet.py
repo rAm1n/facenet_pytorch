@@ -47,15 +47,17 @@ parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 parser.add_argument('--epochs', type=int, default=10, metavar='E',
 					help='number of epochs to train (default: 10)')
 # Training options
-parser.add_argument('--embedding-size', type=int, default=256, metavar='ES',
+parser.add_argument('--embedding-size', type=int, default=128, metavar='ES',
 					help='Dimensionality of the embedding')
 
-parser.add_argument('--batch-size', type=int, default=64, metavar='BS',
+parser.add_argument('--batch-size', type=int, default=128, metavar='BS',
 					help='input batch size for training (default: 128)')
+
 parser.add_argument('--test-batch-size', type=int, default=64, metavar='BST',
 					help='input batch size for testing (default: 1000)')
-parser.add_argument('--n-triplets', type=int, default=1000000, metavar='N',
-					help='how many triplets will generate from the dataset')
+
+parser.add_argument('--n-triplets', type=int, default=100000, metavar='N',
+					help='maximum number of triplets per batch7')
 
 parser.add_argument('--margin', type=float, default=0.5, metavar='MARGIN',
 					help='the margin value for the triplet loss function (default: 1.0')
@@ -160,7 +162,7 @@ transform = transforms.Compose([
 					 ])
 
 
-train_dir = TripletFaceDataset(dir=args.dataroot,n_triplets=args.n_triplets,files=args.list_of_imgs, transform=transform)
+train_dir = TripletFaceDataset(dir=args.dataroot,n_triplets=args.n_triplets, files=args.list_of_imgs, transform=transform)
 
 print('here')
 

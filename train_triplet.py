@@ -162,6 +162,8 @@ transform = transforms.Compose([
 
 train_dir = TripletFaceDataset(dir=args.dataroot,n_triplets=args.n_triplets,files=args.list_of_imgs, transform=transform)
 
+print('here')
+
 train_loader = torch.utils.data.DataLoader(train_dir,
 	batch_size=args.batch_size, shuffle=False, **kwargs)
 
@@ -219,9 +221,9 @@ def train(train_loader, model, optimizer, epoch):
 	pbar = tqdm(enumerate(train_loader))
 	labels, distances = [], []
 
-	
+
 	for batch_idx, (data_a, data_p, data_n,label_p,label_n) in pbar:
-		
+
 		data_a, data_p, data_n = data_a.cuda(), data_p.cuda(), data_n.cuda()
 		data_a, data_p, data_n = Variable(data_a), Variable(data_p), \
 								 Variable(data_n)
@@ -276,7 +278,7 @@ def train(train_loader, model, optimizer, epoch):
 				'Train Epoch: {} [{}/{} ({:.0f}%)] \t Loss: {:.6f}   \t  # of Selected Triplets: {}'.format(
 					epoch, batch_idx * len(data_a), len(train_loader.dataset),
 					100. * batch_idx / len(train_loader),
-					loss.data[0],len(hard_triplets[0])), 
+					loss.data[0],len(hard_triplets[0])),
 				refresh=True)
 
 
@@ -289,7 +291,7 @@ def train(train_loader, model, optimizer, epoch):
 		distances.append(dists.data.cpu().numpy())
 		labels.append(np.ones(dists.size(0)))
 
-		
+
 
 	labels = np.array([sublabel for label in labels for sublabel in label])
 	distances = np.array([subdist for dist in distances for subdist in dist])

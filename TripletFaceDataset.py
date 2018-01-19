@@ -24,19 +24,19 @@ class TripletFaceDataset(datasets.ImageFolder):
 				if line[1] not in self.class_to_idx:
 					self.classes.append(line[1])
 					self.class_to_idx[line[1]] = int(line[1])
-					
+
 			self.classes.sort()
 
 		else:
-			super(TripletFaceDataset, self).__init__(dir,transform) 
+			super(TripletFaceDataset, self).__init__(dir,transform)
 
 		self.n_triplets = n_triplets
 
 		print('Generating {} triplets'.format(self.n_triplets))
-		self.training_triplets = self.generate_triplets(self.imgs, self.n_triplets,len(self.classes))
+		self.training_triplets = self.generate_triplets(self.imgs, self.n_triplets, num_triplets=700)
 
 	@staticmethod
-	def generate_triplets(imgs, num_triplets,n_classes):
+	def generate_triplets(imgs, cls_per_btc, num_triplets=None):
 		def create_indices(_imgs):
 			inds = dict()
 			for idx, (img_path,label) in enumerate(_imgs):
@@ -49,27 +49,42 @@ class TripletFaceDataset(datasets.ImageFolder):
 		# Indices = array of labels and each label is an array of indices
 		indices = create_indices(imgs)
 
-		for x in tqdm(range(num_triplets)):
-			c1 = np.random.randint(0, n_classes-1)
-			c2 = np.random.randint(0, n_classes-1)
-			while len(indices[c1]) < 2:
-				c1 = np.random.randint(0, n_classes-1)
+		n_classes = len(self.classes)
 
-			while c1 == c2:
-				c2 = np.random.randint(0, n_classes-1)
-			if len(indices[c1]) == 2:  # hack to speed up process
-				n1, n2 = 0, 1
-			else:
-				n1 = np.random.randint(0, len(indices[c1]) - 1)
-				n2 = np.random.randint(0, len(indices[c1]) - 1)
-				while n1 == n2:
-					n2 = np.random.randint(0, len(indices[c1]) - 1)
-			if len(indices[c2]) ==1:
-				n3 = 0
-			else:
-				n3 = np.random.randint(0, len(indices[c2]) - 1)
+		# choose classes
+		sampled_classes = list()
+		for x in range(cls_per_btc):
+			while True:
+				c = np.random.randint(0, n_classes-1)
+				if len(indices[c]) < 2:
+					continue
+				elif c in sampled_classes:
+					continue
+				else:
+					sampled_classes.append(c)
+					break
 
-			triplets.append([indices[c1][n1], indices[c1][n2], indices[c2][n3],c1,c2])
+		for c1 in range(len(cls_per_btc)):
+			for c2 in range(c1, len(cls_per_btc)):
+				c1_index = sampled_classes[c1]
+				c2_index = sampled_classes[c2]
+
+				c1_sample_a = np.random.randint(0, len(indices[c1_index]) - 1)
+				c1_sample_p =np.random.randint(0, len(indices[c1_index]) - 1)
+				while c1_sample_a == c1_sample_p:
+					c1_sample_p = np.random.randint(0, len(indices[c1_index]) - 1)
+
+				c2_sample_n = np.random.randint(0, len(indices[c2_index]) - 1)
+
+				trip = [indices[c1][c1_sample_a], indices[c1][c1_sample_p], indices[c2][c2_sample_n]]
+				trip += [c1_index,c2_index]
+
+				triplets.append(trip)
+
+		if num_triplets:
+			if len(triplets) > num_triplets:
+				triplets = triplets[:num_triplets]
+
 		return triplets
 
 	def __getitem__(self, index):
